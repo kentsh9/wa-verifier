@@ -1,15 +1,12 @@
 const express = require('express');
-const fetch = require('node-fetch'); // 需要在 package.json 中安装 node-fetch@2
+const fetch = require('node-fetch'); // 使用 node-fetch v2
 const app = express();
 
-// 中间件：解析 JSON 请求体
 app.use(express.json());
 
-// 读取环境变量中的 VERIFY_TOKEN 和 FORWARD_URL
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const FORWARD_URL = process.env.FORWARD_URL;
 
-// GET：Webhook 验证
 app.get('/', (req, res) => {
   if (
     req.query['hub.mode'] === 'subscribe' &&
@@ -23,17 +20,15 @@ app.get('/', (req, res) => {
   }
 });
 
-// POST：接收消息并转发到 Make（可选）
 app.post('/', async (req, res) => {
   console.log('📨 Received message:', JSON.stringify(req.body, null, 2));
 
   try {
-    // 将消息转发到 Make Webhook（可选）
     if (FORWARD_URL) {
       await fetch(FORWARD_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body)
+        body: JSON.stringify(req.body),
       });
       console.log('➡️ Message forwarded to Make');
     }
@@ -45,8 +40,9 @@ app.post('/', async (req, res) => {
   }
 });
 
-// 启动服务
-const port = process.env.PORT || 3000;
+// ❗必须使用 Render 提供的 PORT 环境变量
+const port = process.env.PORT;
 app.listen(port, () => {
   console.log(`🚀 Webhook verification server running on port ${port}`);
 });
+       
