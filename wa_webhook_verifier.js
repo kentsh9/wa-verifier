@@ -7,7 +7,8 @@ app.use(express.json());
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const FORWARD_URL = process.env.FORWARD_URL;
 
-app.get('/', (req, res) => {
+// ✅ webhook 验证 GET 方法
+app.get('/webhook', (req, res) => {
   if (
     req.query['hub.mode'] === 'subscribe' &&
     req.query['hub.verify_token'] === VERIFY_TOKEN
@@ -20,7 +21,8 @@ app.get('/', (req, res) => {
   }
 });
 
-app.post('/', async (req, res) => {
+// ✅ webhook 接收消息 POST 方法
+app.post('/webhook', async (req, res) => {
   console.log('📨 Received message:', JSON.stringify(req.body, null, 2));
 
   try {
@@ -41,8 +43,7 @@ app.post('/', async (req, res) => {
 });
 
 // ❗必须使用 Render 提供的 PORT 环境变量
-const port = process.env.PORT;
+const port = process.env.PORT || 10000;
 app.listen(port, () => {
   console.log(`🚀 Webhook verification server running on port ${port}`);
 });
-       
