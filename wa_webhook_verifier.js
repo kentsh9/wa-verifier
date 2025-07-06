@@ -1,49 +1,55 @@
 const express = require('express');
-const fetch = require('node-fetch'); // 使用 node-fetch v2
+const fetch = require('node-fetch');
 const app = express();
+require('dotenv').config();
 
 app.use(express.json());
 
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-const FORWARD_URL = process.env.FORWARD_URL;
-
-// ✅ webhook 验证 GET 方法
+// 验证 webhook
 app.get('/webhook', (req, res) => {
-  if (
-    req.query['hub.mode'] === 'subscribe' &&
-    req.query['hub.verify_token'] === VERIFY_TOKEN
-  ) {
-    console.log('✅ Webhook verified');
-    res.status(200).send(req.query['hub.challenge']);
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token && mode === 'subscribe' && token === VERIFY_TOKEN) {
+    console.log('Webhook verified successfully!');
+    res.status(200).send(challenge);
   } else {
-    console.warn('❌ Webhook verification failed');
+    console.log('Webhook verification failed.');
     res.sendStatus(403);
   }
 });
 
-// ✅ webhook 接收消息 POST 方法
+// 接收消息并转发
 app.post('/webhook', async (req, res) => {
-  console.log('📨 Received message:', JSON.stringify(req.body, null, 2));
-
   try {
-    if (FORWARD_URL) {
-      await fetch(FORWARD_URL, {
+    const body = req.body;
+    console.log('🔔 Incoming webhook:', JSON.stringify(body, null, 2));
+
+    // 你可以根据 body.entry 做过滤处理，比如判断 message 类型等
+
+    // 转发给 Make（或任意其他目标）
+    const forwardURL = process.env.FORWARD_URL;
+    if (forwardURL) {
+      await fetch(forwardURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body),
+        body: JSON.stringify(body)
       });
-      console.log('➡️ Message forwarded to Make');
     }
 
+    // （可选）如果你有 Receevi 监听服务，也可以加入额外转发
+
     res.sendStatus(200);
-  } catch (error) {
-    console.error('❌ Forwarding failed:', error);
+  } catch (err) {
+    console.error('❌ Error processing webhook:', err);
     res.sendStatus(500);
   }
 });
 
-// ❗必须使用 Render 提供的 PORT 环境变量
-const port = process.env.PORT || 10000;
-app.listen(port, () => {
-  console.log(`🚀 Webhook verification server running on port ${port}`);
+// 启动服务器
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Webhook server is running on port ${PORT}`);
 });
