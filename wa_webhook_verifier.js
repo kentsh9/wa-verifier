@@ -6,12 +6,14 @@ const app = express();
 app.use(express.json());
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'cloudtest123';
-const TARGET_URLS = [
-  process.env.FORWARD_URL,                          // Make Webhook
-  'http://47.238.114.76:3002/api/webhook'           // Receevi 本地监听
-];
 
-// ✅ GET 验证接口
+// 👇 多个目标地址：Make 和 Receevi 本地监听
+const TARGET_URLS = [
+  process.env.FORWARD_URL,                          // 例如：https://hook.us2.make.com/xxxx
+  'http://47.238.114.76:3002/api/webhook'           // Receevi 本地服务监听
+].filter(Boolean);  // ✅ 忽略空地址，防止 .env 中未定义
+
+// ✅ Webhook 验证（GET）
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -26,20 +28,25 @@ app.get('/webhook', (req, res) => {
   }
 });
 
-// ✅ POST 接收 webhook 并转发
+// ✅ 接收 Webhook 并转发（POST）
 app.post('/webhook', async (req, res) => {
   try {
     const body = req.body;
     console.log('📨 收到 Facebook 消息:', JSON.stringify(body, null, 2));
 
-    await Promise.allSettled(
-      TARGET_URLS.map(url =>
-        fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        })
-      )
+    const results = await Promise.allSettled(
+      TARGET_URLS.map(async (url) => {
+        try {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          console.log(`✅ 转发成功 → ${url}，状态码: ${response.status}`);
+        } catch (err) {
+          console.error(`❌ 转发失败 → ${url}`, err.message);
+        }
+      })
     );
 
     res.sendStatus(200);
@@ -52,5 +59,5 @@ app.post('/webhook', async (req, res) => {
 // ✅ 启动服务
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Webhook 服务已启动，监听端口: ${PORT}`);
+  console.log(`🚀 Webhook 转发服务运行中，监听端口 ${PORT}`);
 });
