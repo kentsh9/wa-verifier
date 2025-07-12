@@ -61,3 +61,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Webhook 转发服务运行中，监听端口 ${PORT}`);
 });
+console.log('🔍 VERIFY_TOKEN =', VERIFY_TOKEN);
+console.log('🔍 FORWARD_URL =', process.env.FORWARD_URL);
