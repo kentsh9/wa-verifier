@@ -9,8 +9,7 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'cloudtest123';
 
 // 👇 多个目标地址：Make 和 Receevi 本地监听
 const TARGET_URLS = [
-  process.env.FORWARD_URL,                          // 例如：https://hook.us2.make.com/xxxx
-  'http://47.238.114.76:3010/api/webhook'           // Receevi 本地服务监听
+'http://47.238.114.76:3010/api/webhook'           // Receevi 本地服务监听
 ].filter(Boolean);  // ✅ 忽略空地址，防止 .env 中未定义
 
 // ✅ Webhook 验证（GET）
